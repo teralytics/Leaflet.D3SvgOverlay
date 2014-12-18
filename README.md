@@ -18,7 +18,7 @@ for manipulating documents based on data.
 
 ## Demo
 
-Demo pages are under development. 
+[Simple example: Swiss cities](http://bl.ocks.org/xEviL/4921fff1d70f5601d159)
 
 ## Basic usage
 
