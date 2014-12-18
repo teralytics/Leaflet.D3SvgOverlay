@@ -11,7 +11,7 @@ for manipulating documents based on data.
  * Easy SVG-drawing with D3
  * No limitations to polylines, circles or geoJSON. Draw whatever you want with SVG
  * No need to reproject your geometries on zoom, this is done using SVG scaling
- * Zoom animation in Firefox, Chrome and Android browser and in IE 11
+ * Zoom animation in Firefox, Chrome, Android browser and in IE 11
  * Auto-adjusting SVG viewport for both performance and "endless" panning experience
 
 *Tested with Leaflet 0.7.3 and D3 3.4.9*
@@ -91,3 +91,9 @@ available methods/fields:
 ## License
 
 This code is provided under the MIT License (MIT).
+
+## Brought to you by Teralytics AG
+
+Interested in data analysis, big data, mapping and visualizations? Have experience in running big infrastructure? We're hiring!
+
+Find how to apply at http://teralytics.net
