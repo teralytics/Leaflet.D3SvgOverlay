@@ -62,10 +62,10 @@ L.D3SvgOverlay = L.Class.extend({
     // "zoomanim"/"viewreset" event handler: calculate shift/scale values
     _zoomCalc: function (evt) {
         // Compute and store coordinates to animate to
-        var newZoom = evt.zoom || map._zoom; // "viewreset" event in Leaflet has not zoom/center parameters like zoomanim
+        var newZoom = evt.zoom || this.map._zoom; // "viewreset" event in Leaflet has not zoom/center parameters like zoomanim
         this._zoomDiff = newZoom - this._zoom;
         this._scale = Math.pow(2, this._zoomDiff);
-        this._shift = this.map._latLngToNewLayerPoint(this._origin, newZoom, (evt.center || map._initialCenter ));
+        this._shift = this.map._latLngToNewLayerPoint(this._origin, newZoom, (evt.center || this.map._initialCenter ));
     },
 
     // "zoomstart" event handler: stop running animation
