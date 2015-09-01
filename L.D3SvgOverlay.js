@@ -20,21 +20,21 @@ d3.select("head")
     .text("svg.d3-overlay{pointer-events:none;position:absolute;}svg.d3-overlay>g.origin *{pointer-events:visiblePainted;}");
 
 // Class definition
-L.D3SvgOverlay = L.Class.extend({
-    includes: L.Mixin.Events,
+L.D3SvgOverlay = (L.version < "1.0" ? L.Class : L.Layer).extend({
+    includes: (L.version < "1.0" ? L.Mixin.Events : []),
 
     _isDef: function(a){ return typeof a != "undefined" },
 
-    options: function (options) {
+    _options: function (options) {
         if (!this._isDef(options)) {
-            return this._options;
+            return this.options;
         }
         options.zoomAnimate = !this._isDef(options.zoomAnimate) ? true : options.zoomAnimate;
         options.zoomHide = !this._isDef(options.zoomHide) ? !options.zoomAnimate : options.zoomHide;
         options.zoomDraw = !this._isDef(options.zoomDraw) ? true : options.zoomDraw;
         options.jsAnimation = options.jsAnimation || false;
 
-        return this._options = options;
+        return this.options = options;
     },
 
     draw: function () {
@@ -42,7 +42,7 @@ L.D3SvgOverlay = L.Class.extend({
     },
 
     initialize: function (drawCallback, options) { // (Function(selection, projection)), (Object)options
-        this.options(options || {});
+        this._options(options || {});
         this._drawCallback = drawCallback;
     },
 
@@ -78,7 +78,7 @@ L.D3SvgOverlay = L.Class.extend({
 
     // "zoomanim" event handler: perform animation
     _zoomAnimate: function (evt) {
-        if (L.Browser.ie || this._options.jsAnimation) {
+        if (L.Browser.ie || this.options.jsAnimation) {
             // For IE use JS-based animation
             this._gTranslate
                 .transition()
@@ -128,7 +128,7 @@ L.D3SvgOverlay = L.Class.extend({
         this._gScale.attr("transform", "scale(" + this._scale + "," + this._scale + ")");
         !this.translateAnim || this.translateAnim.remove();
         !this.scaleAnim || this.scaleAnim.remove();
-        if (this._options.zoomDraw) {
+        if (this.options.zoomDraw) {
             this.draw();
         }
     },
@@ -137,14 +137,14 @@ L.D3SvgOverlay = L.Class.extend({
     _zoomChange: function () {
         this._gTranslate.attr("transform", "translate(" + this._shift.x + "," + this._shift.y + ")");
         this._gScale.attr("transform", "scale(" + this._scale + "," + this._scale + ")");
-        if (this._options.zoomDraw) {
+        if (this.options.zoomDraw) {
             this.draw();
         }
     },
 
     onAdd: function (map) {
         this.map = map;
-        this._zoomAnimated = this._options.zoomAnimate && map._zoomAnimated;
+        this._zoomAnimated = this.options.zoomAnimate && map._zoomAnimated;
         var _layer = this;
 
         // SVG element, defaults to 3x3 screen size
@@ -152,7 +152,7 @@ L.D3SvgOverlay = L.Class.extend({
             .append("svg")
             .classed({
                 "d3-overlay": true,
-                "leaflet-zoom-hide": this._options.zoomHide
+                "leaflet-zoom-hide": this.options.zoomHide
             });
 
         // Origin <g> element to be shifted to align with Leaflet (0,0) pixel coordinates
@@ -227,7 +227,7 @@ L.D3SvgOverlay = L.Class.extend({
 
     onRemove: function (map) {
         this._svg.remove();
-        this.map.off(this._options.updateOn, this.draw, this);
+        this.map.off(this.options.updateOn, this.draw, this);
         this.map.off("moveend", this.updSvg, this);
         if (this._zoomAnimated) {
             this.map.off("zoomanim", this._zoomCalc, this);

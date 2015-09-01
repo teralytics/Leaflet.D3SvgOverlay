@@ -14,7 +14,7 @@ for manipulating documents based on data.
  * Zoom animation in Firefox, Chrome, Android browser and in IE 11
  * Auto-adjusting SVG viewport for both performance and "endless" panning experience
 
-*Tested with Leaflet 0.7.3 and D3 3.4.9*
+*Tested with Leaflet 0.7.3 / 1.0.0-beta.1 and D3 3.4.9*
 
 ## Demo
 
