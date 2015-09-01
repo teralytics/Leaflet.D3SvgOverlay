@@ -23,13 +23,15 @@ d3.select("head")
 L.D3SvgOverlay = L.Class.extend({
     includes: L.Mixin.Events,
 
+    _isDef: function(a){ return typeof a != "undefined" },
+
     options: function (options) {
-        if (typeof options == "undefined") {
+        if (!this._isDef(options)) {
             return this._options;
         }
-        options.zoomAnimate = (typeof options.zoomAnimate == "undefined") ? true : options.zoomAnimate;
-        options.zoomHide = (typeof options.zoomHide == "undefined") ? !options.zoomAnimate : options.zoomHide;
-        options.zoomDraw = (typeof options.zoomDraw == "undefined") ? true : options.zoomDraw;
+        options.zoomAnimate = !this._isDef(options.zoomAnimate) ? true : options.zoomAnimate;
+        options.zoomHide = !this._isDef(options.zoomHide) ? !options.zoomAnimate : options.zoomHide;
+        options.zoomDraw = !this._isDef(options.zoomDraw) ? true : options.zoomDraw;
         options.jsAnimation = options.jsAnimation || false;
 
         return this._options = options;
@@ -62,7 +64,7 @@ L.D3SvgOverlay = L.Class.extend({
     // "zoomanim"/"viewreset" event handler: calculate shift/scale values
     _zoomCalc: function (evt) {
         // Compute and store coordinates to animate to
-        var newZoom = evt.zoom || this.map._zoom; // "viewreset" event in Leaflet has not zoom/center parameters like zoomanim
+        var newZoom = this._isDef(evt.zoom) ? evt.zoom : this.map._zoom; // "viewreset" event in Leaflet has not zoom/center parameters like zoomanim
         this._zoomDiff = newZoom - this._zoom;
         this._scale = Math.pow(2, this._zoomDiff);
         this._shift = this.map._latLngToNewLayerPoint(this._origin, newZoom, (evt.center || this.map._initialCenter ));
@@ -168,15 +170,16 @@ L.D3SvgOverlay = L.Class.extend({
         this._scale = 1;
 
         // Create projection object
+        _this = this;
         this.projection = {
             latLngToLayerPoint: function (latLng, zoom) {
-                zoom = zoom || _layer._zoom;
+                zoom = _this._isDef(zoom) ? zoom : _layer._zoom;
                 var projectedPoint = _layer.map.project(L.latLng(latLng), zoom),
                     projectedOrigin = _layer.map.project(_layer._origin, zoom);
                 return projectedPoint._subtract(projectedOrigin);
             },
             layerPointToLatLng: function (point, zoom) {
-                zoom = zoom || _layer._zoom;
+                zoom = _this._isDef(zoom) ? zoom : _layer._zoom;
                 var projectedOrigin = _layer.map.project(_layer._origin, zoom);
                 return _layer.map.unproject(point.add(projectedOrigin), zoom);
             },
