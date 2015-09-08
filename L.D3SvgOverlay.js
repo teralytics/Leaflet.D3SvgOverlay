@@ -114,11 +114,15 @@ L.D3SvgOverlay = (L.version < "1.0" ? L.Class : L.Layer).extend({
     },
 
     // Leaf
-    getEvents: function(){return {zoomend: this._zoomChange}} ,
+    getEvents: function(){return {zoomend: this._zoomChange}},
 
     onRemove: function (map) {
-        this._svg.remove();
-        if (L.version < "1.0") map.off("viewreset", this._zoomChange, this);
+        if (L.version < "1.0"){
+            map.off("viewreset", this._zoomChange, this);
+            this._rootGroup.remove();
+        } else {
+            this._svg.remove();
+        }
     },
 
     addTo: function (map) {
