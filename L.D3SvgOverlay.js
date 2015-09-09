@@ -49,8 +49,8 @@ L.D3SvgOverlay = (L.version < "1.0" ? L.Class : L.Layer).extend({
         var newZoom = this._isDef(evt.zoom) ? evt.zoom : this.map._zoom; // "viewreset" event in Leaflet has not zoom/center parameters like zoomanim
         this._zoomDiff = newZoom - this._zoom;
         this._scale = Math.pow(2, this._zoomDiff);
-        this._shift = this.map._latLngToNewLayerPoint(this._origin, newZoom,
-            (evt.center || this.map._initialCenter || this.map.getCenter()));
+        this._shift = this.map.latLngToLayerPoint(this._wgsOrigin)
+            ._subtract(this._wgsInitialShift.multiplyBy(this._scale));
 
         var shift = ["translate(", this._shift.x, ",", this._shift.y, ") "];
         var scale = ["scale(", this._scale, ",", this._scale,") "];
@@ -76,9 +76,11 @@ L.D3SvgOverlay = (L.version < "1.0" ? L.Class : L.Layer).extend({
         }
         this._rootGroup.classed("leaflet-zoom-hide", this.options.zoomHide);
         this.selection = this._rootGroup;
-        
+
         // Init shift/scale invariance helper values
-        this._origin = this.map.layerPointToLatLng([0, 0]);
+        this._layerOrigin = this.map.layerPointToLatLng([0, 0]);
+        this._wgsOrigin = L.latLng([0, 0]);
+        this._wgsInitialShift = this.map.latLngToLayerPoint(this._wgsOrigin);
         this._zoom = this.map.getZoom();
         this._shift = L.point(0, 0);
         this._scale = 1;
@@ -88,12 +90,12 @@ L.D3SvgOverlay = (L.version < "1.0" ? L.Class : L.Layer).extend({
             latLngToLayerPoint: function (latLng, zoom) {
                 zoom = _layer._isDef(zoom) ? zoom : _layer._zoom;
                 var projectedPoint = _layer.map.project(L.latLng(latLng), zoom),
-                    projectedOrigin = _layer.map.project(_layer._origin, zoom);
+                    projectedOrigin = _layer.map.project(_layer._layerOrigin, zoom);
                 return projectedPoint._subtract(projectedOrigin);
             },
             layerPointToLatLng: function (point, zoom) {
                 zoom = _layer._isDef(zoom) ? zoom : _layer._zoom;
-                var projectedOrigin = _layer.map.project(_layer._origin, zoom);
+                var projectedOrigin = _layer.map.project(_layer._layerOrigin, zoom);
                 return _layer.map.unproject(point.add(projectedOrigin), zoom);
             },
             unitsPerMeter: 256 * Math.pow(2, _layer._zoom) / 40075017,
