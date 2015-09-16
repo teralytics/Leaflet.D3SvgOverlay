@@ -78,7 +78,7 @@ L.D3SvgOverlay = (L.version < "1.0" ? L.Class : L.Layer).extend({
         this.selection = this._rootGroup;
 
         // Init shift/scale invariance helper values
-        this._layerOrigin = this.map.layerPointToLatLng([0, 0]);
+        this._pixelOrigin = map.getPixelOrigin();
         this._wgsOrigin = L.latLng([0, 0]);
         this._wgsInitialShift = this.map.latLngToLayerPoint(this._wgsOrigin);
         this._zoom = this.map.getZoom();
@@ -89,14 +89,13 @@ L.D3SvgOverlay = (L.version < "1.0" ? L.Class : L.Layer).extend({
         this.projection = {
             latLngToLayerPoint: function (latLng, zoom) {
                 zoom = _layer._isDef(zoom) ? zoom : _layer._zoom;
-                var projectedPoint = _layer.map.project(L.latLng(latLng), zoom),
-                    projectedOrigin = _layer.map.project(_layer._layerOrigin, zoom);
-                return projectedPoint._subtract(projectedOrigin);
+                var projectedPoint = _layer.map.project(L.latLng(latLng), zoom)._round();
+                return projectedPoint._subtract(_layer._pixelOrigin);
             },
             layerPointToLatLng: function (point, zoom) {
                 zoom = _layer._isDef(zoom) ? zoom : _layer._zoom;
-                var projectedOrigin = _layer.map.project(_layer._layerOrigin, zoom);
-                return _layer.map.unproject(point.add(projectedOrigin), zoom);
+                var projectedPoint = L.point(point).add(_layer._pixelOrigin);
+                return _layer.map.unproject(projectedPoint, zoom);
             },
             unitsPerMeter: 256 * Math.pow(2, _layer._zoom) / 40075017,
             map: _layer.map,
