@@ -13,7 +13,7 @@ for manipulating documents based on data.
  * No need to reproject your geometries on zoom, this is done using SVG scaling
  * Zoom animation where Leaflet supports it
 
-*Compatible with Leaflet 0.7.x / **1.x***
+*Compatible with Leaflet 0.7.x / 1.0.x*
 
 ## Demo
 
@@ -52,6 +52,8 @@ Create an overlay:
 Add it to the map:
 
     d3Overlay.addTo(map);
+
+Note: within the drawing callback function you can and should use the normal [D3 workflow](https://github.com/mbostock/d3/wiki/Selections) with *update*, *.enter()* and *.exit()* selections.
 
 ## API
 
