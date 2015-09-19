@@ -11,10 +11,9 @@ for manipulating documents based on data.
  * Easy SVG-drawing with D3
  * No limitations to polylines, circles or geoJSON. Draw whatever you want with SVG
  * No need to reproject your geometries on zoom, this is done using SVG scaling
- * Zoom animation in Firefox, Chrome, Android browser and in IE 11
- * Auto-adjusting SVG viewport for both performance and "endless" panning experience
+ * Zoom animation where Leaflet supports it
 
-*Tested with Leaflet 0.7.3 and D3 3.4.9*
+*Compatible with Leaflet 0.7.x / 1.0.x*
 
 ## Demo
 
@@ -24,8 +23,10 @@ for manipulating documents based on data.
 
 Include the dependency libraries:
 
-    <script src="d3.min.js"></script>
-    <script src="leaflet.min.js"></script>
+    <link href='https://cdnjs.cloudflare.com/ajax/libs/leaflet/0.7.5/leaflet.css'
+               rel='stylesheet' type='text/css'/>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/leaflet/0.7.5/leaflet-src.js"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/d3/3.4.9/d3.min.js"></script>
 
 Include the D3SvgOverlay library:
 
@@ -37,7 +38,7 @@ Create a map:
 
 Create an overlay:
 
-    var d3Overlay = L.d3SvgOverlay(function(selection,projection){
+    var d3Overlay = L.d3SvgOverlay(function(selection, projection){
     
         var updateSelection = selection.selectAll('circle').data(dataset);
         updateSelection.enter()
@@ -47,16 +48,18 @@ Create an overlay:
             .attr("cy",function(d){return projection.latLngToLayerPoint(d.latLng).y;});
         
     });
-    
+
 Add it to the map:
 
     d3Overlay.addTo(map);
+
+Note: within the drawing callback function you can and should use the normal [D3 workflow](https://github.com/mbostock/d3/wiki/Selections) with *update*, *.enter()* and *.exit()* selections.
 
 ## API
 
 *Factory method*
 
-    L.d3SvgOverlay( <function> drawCallback, <options> options? )
+    L.d3SvgOverlay(<function> drawCallback, <options> options?)
 
  * `drawCallback`  - callback to draw/update overlay contents, it's called with arguments:
  * `options`  - overlay options object:
@@ -64,29 +67,28 @@ Add it to the map:
  
 *Drawing callback function*
 
-    drawCallback( selection, projection )
+    drawCallback(selection, projection)
  
  * `selection`   - D3 selection of a parent element for drawing. Put your SVG elements bound to data here
  * `projection`  - projection object. Contains methods to work with layers coordinate system and scaling
   
 *Overlay options object*
 
-available fields: 
- 
- * `zoomAnimate`    - (bool) use animation when zooming. Default is true. Leaflet must have animation enabled for this to work
- * `zoomHide`   - (bool) hide the layer while zooming. Default is !zoomAnimate
- * `zoomDraw`   - (bool) whether to trigger drawCallback on after zoom is done. Default is true
- * `jsAnimation`    - (bool) force use of D3 for animation. Default is false. By default it's using SMIL animation where available and D3 animation for IE
+available fields:
+
+ * `zoomHide`   - (bool) hide the layer while zooming. Default is *false*. Useful when overlay contains a lot of elements and animation is laggy.
+ * `zoomDraw`   - (bool) whether to trigger drawCallback on after zooming is done. Default is *true*. Useful e.g. when you want to adjust size or width of the elements depending on zoom.
 
 *Projection object*
 
 available methods/fields:
 
- * `latLngToLayerPoint(latLng, zoom?)`   - (function) returns `L.Point` projected from `L.LatLng` in the coordinate system of an overlay
- * `layerPointToLatLng(point, zoom?)`    - (function) returns `L.LatLng` projected back from `L.Point` into the original CRS
- * `unitsPerMeter`    - (float) this is a number of units in the overlay coordinate system. Useful to get dimentions in meters
- * `map`    - reference to the `L.Map` object, useful to get map state (zoom, viewport bounds, etc)
- * `layer`  - reference to the `L.D3SvgOverlay` object, useful for extending behavoir of the overlay
+ * `latLngToLayerPoint(latLng, zoom?)`   - (function) returns `L.Point` projected from `L.LatLng` in the coordinate system of the overlay.
+ * `layerPointToLatLng(point, zoom?)`    - (function) returns `L.LatLng` projected back from `L.Point` into the original CRS.
+ * `unitsPerMeter`    - (float) this is a number of the overlay coordinate system units in 1 meter. Useful to get dimensions in meters.
+ * `scale`  - scale of current zoom compared to the zoom level of overlay coordinate system. Useful if you want to make your elements of a size independent of zoom. Just divide the size by the scale.
+ * `map`    - reference to the `L.Map` object, useful to get map state (zoom, viewport bounds, etc), especially when having multiple maps in the page.
+ * `layer`  - reference to the `L.D3SvgOverlay` object, useful for extending behavior of the overlay.
 
 ## License
 

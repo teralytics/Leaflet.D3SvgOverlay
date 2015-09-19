@@ -1,5 +1,5 @@
 /**
- * Copyright 2014 Teralytics AG
+ * Copyright 2015 Teralytics AG
  *
  * @author Kirill Zhuravlev <kirill.zhuravlev@teralytics.ch>
  *
@@ -14,230 +14,131 @@ if (typeof L == "undefined") {
 }
 
 // Tiny stylesheet bundled here instead of a separate file
-d3.select("head")
-    .append("style")
-    .attr("type", "text/css")
-    .text("svg.d3-overlay{pointer-events:none;position:absolute;}svg.d3-overlay>g.origin *{pointer-events:visiblePainted;}");
+if (L.version >= "1.0") {
+    d3.select("head")
+        .append("style").attr("type", "text/css")
+        .text("g.d3-overlay *{pointer-events:visiblePainted;}");
+}
 
 // Class definition
-L.D3SvgOverlay = L.Class.extend({
-    includes: L.Mixin.Events,
+L.D3SvgOverlay = (L.version < "1.0" ? L.Class : L.Layer).extend({
+    includes: (L.version < "1.0" ? L.Mixin.Events : []),
 
-    _isDef: function(a){ return typeof a != "undefined" },
+    _undef: function(a){ return typeof a == "undefined" },
 
-    options: function (options) {
-        if (!this._isDef(options)) {
-            return this._options;
+    _options: function (options) {
+        if (this._undef(options)) {
+            return this.options;
         }
-        options.zoomAnimate = !this._isDef(options.zoomAnimate) ? true : options.zoomAnimate;
-        options.zoomHide = !this._isDef(options.zoomHide) ? !options.zoomAnimate : options.zoomHide;
-        options.zoomDraw = !this._isDef(options.zoomDraw) ? true : options.zoomDraw;
-        options.jsAnimation = options.jsAnimation || false;
+        options.zoomHide = this._undef(options.zoomHide) ? false : options.zoomHide;
+        options.zoomDraw = this._undef(options.zoomDraw) ? true : options.zoomDraw;
 
-        return this._options = options;
+        return this.options = options;
+    },
+
+    _disableLeafletRounding: function(){
+        this._leaflet_round = L.Point.prototype._round;
+        L.Point.prototype._round = function(){ return this; };
+    },
+
+    _enableLeafletRounding: function(){
+        L.Point.prototype._round = this._leaflet_round;
     },
 
     draw: function () {
+        this._disableLeafletRounding();
         this._drawCallback(this.selection, this.projection, this.map.getZoom());
+        this._enableLeafletRounding();
     },
 
     initialize: function (drawCallback, options) { // (Function(selection, projection)), (Object)options
-        this.options(options || {});
+        this._options(options || {});
         this._drawCallback = drawCallback;
     },
 
-    // Viewport-like behaviour for SVG element
-    updSvg: function () {
-        var pixelSize = this.map.getSize();
-        var pixelBounds = this.map.getPixelBounds();
-        var pixelOrigin = this.map.getPixelOrigin();
-        this._svg
-            .attr("width", pixelSize.x * 3)
-            .attr("height", pixelSize.y * 3)
-            .attr("viewBox", [0, 0, pixelSize.x * 3, pixelSize.y * 3].join(" "))
-            .style("left", (pixelBounds.min.x - pixelOrigin.x - pixelSize.x) + "px")
-            .style("top", (pixelBounds.min.y - pixelOrigin.y - pixelSize.y) + "px");
-        this._svg.select("g.origin")
-            .attr("transform", ["translate(", pixelSize.x - (pixelBounds.min.x - pixelOrigin.x), ",", pixelSize.y - (pixelBounds.min.y - pixelOrigin.y), ")"].join(""));
-    },
-
-    // "zoomanim"/"viewreset" event handler: calculate shift/scale values
-    _zoomCalc: function (evt) {
-        // Compute and store coordinates to animate to
-        var newZoom = this._isDef(evt.zoom) ? evt.zoom : this.map._zoom; // "viewreset" event in Leaflet has not zoom/center parameters like zoomanim
+    // Handler for "viewreset"-like events, updates scale and shift after the animation
+    _zoomChange: function (evt) {
+        this._disableLeafletRounding();
+        var newZoom = this._undef(evt.zoom) ? this.map._zoom : evt.zoom; // "viewreset" event in Leaflet has not zoom/center parameters like zoomanim
         this._zoomDiff = newZoom - this._zoom;
         this._scale = Math.pow(2, this._zoomDiff);
-        this._shift = this.map._latLngToNewLayerPoint(this._origin, newZoom, (evt.center || this.map._initialCenter ));
-    },
+        this.projection.scale = this._scale;
+        this._shift = this.map.latLngToLayerPoint(this._wgsOrigin)
+            ._subtract(this._wgsInitialShift.multiplyBy(this._scale));
 
-    // "zoomstart" event handler: stop running animation
-    _zoomStart: function () {
-        !this.translateAnim || this.translateAnim.remove();
-        !this.scaleAnim || this.scaleAnim.remove();
-    },
+        var shift = ["translate(", this._shift.x, ",", this._shift.y, ") "];
+        var scale = ["scale(", this._scale, ",", this._scale,") "];
+        this._rootGroup.attr("transform", shift.concat(scale).join(""));
 
-    // "zoomanim" event handler: perform animation
-    _zoomAnimate: function (evt) {
-        if (L.Browser.ie || this._options.jsAnimation) {
-            // For IE use JS-based animation
-            this._gTranslate
-                .transition()
-                .duration(250)
-                .attr("transform", "translate(" + this._shift.x + "," + this._shift.y + ")")
-                .ease(d3.ease("cubic-out"));
-            this._gScale
-                .transition()
-                .duration(250)
-                .attr("transform", "scale(" + this._scale + ")")
-                .ease(d3.ease("cubic-out"));
-        }
-        else {
-            // For compatible browsers use SMIL-animations
-            this.translateAnim = this._svg.append("animateTransform")
-                .attr("xlink:href", this._gTranslateXRef)
-                .attr("attributeName", "transform")
-                .attr("attributeType", "XML")
-                .attr("type", "translate")
-                .attr("to", this._shift.x + "," + this._shift.y)
-                .attr("dur", "0.25s")
-                .attr("calcMode", "spline")
-                .attr("keyTimes", "0; 1")
-                .attr("keySplines", "0 0 0.25 1")
-                .attr("begin", "indefinite")
-                .attr("fill", "freeze");
-            this.scaleAnim = this._svg.append("animateTransform")
-                .attr("xlink:href", this._gScaleXRef)
-                .attr("attributeName", "transform")
-                .attr("attributeType", "XML")
-                .attr("type", "scale")
-                .attr("to", this._scale + "," + this._scale)
-                .attr("dur", "0.25s")
-                .attr("calcMode", "spline")
-                .attr("keyTimes", "0; 1")
-                .attr("keySplines", "0 0 0.25 1")
-                .attr("begin", "indefinite")
-                .attr("fill", "freeze");
-            this.translateAnim.node().beginElement();
-            this.scaleAnim.node().beginElement();
-        }
-    },
-
-    // "zoomend" event handler: cleanup after animation
-    _zoomEnd: function () {
-        this._gTranslate.attr("transform", "translate(" + this._shift.x + "," + this._shift.y + ")");
-        this._gScale.attr("transform", "scale(" + this._scale + "," + this._scale + ")");
-        !this.translateAnim || this.translateAnim.remove();
-        !this.scaleAnim || this.scaleAnim.remove();
-        if (this._options.zoomDraw) {
-            this.draw();
-        }
-    },
-
-    // Handler for "viewreset"-like events, used for non-animated zoom
-    _zoomChange: function () {
-        this._gTranslate.attr("transform", "translate(" + this._shift.x + "," + this._shift.y + ")");
-        this._gScale.attr("transform", "scale(" + this._scale + "," + this._scale + ")");
-        if (this._options.zoomDraw) {
-            this.draw();
-        }
+        if (this.options.zoomDraw) { this.draw() }
+        this._enableLeafletRounding();
     },
 
     onAdd: function (map) {
         this.map = map;
-        this._zoomAnimated = this._options.zoomAnimate && map._zoomAnimated;
         var _layer = this;
 
-        // SVG element, defaults to 3x3 screen size
-        this._svg = d3.select(map._panes.overlayPane)
-            .append("svg")
-            .classed({
-                "d3-overlay": true,
-                "leaflet-zoom-hide": this._options.zoomHide
-            });
-
-        // Origin <g> element to be shifted to align with Leaflet (0,0) pixel coordinates
-        this._gOrigin = this._svg
-            .append("g")
-            .classed("origin", true);
-
-        // Making svg element endless
-        this.map.on("moveend", this.updSvg, this);
+        // SVG element
+        if (L.version < "1.0") {
+            map._initPathRoot();
+            this._svg = d3.select(map._panes.overlayPane)
+                .select("svg");
+            this._rootGroup = this._svg.append("g");
+        } else {
+            this._svg = L.svg();
+            map.addLayer(this._svg);
+            this._rootGroup = d3.select(this._svg._rootGroup).classed("d3-overlay", true);
+        }
+        this._rootGroup.classed("leaflet-zoom-hide", this.options.zoomHide);
+        this.selection = this._rootGroup;
 
         // Init shift/scale invariance helper values
-        this._origin = this.map.layerPointToLatLng([0, 0]);
+        this._pixelOrigin = map.getPixelOrigin();
+        this._wgsOrigin = L.latLng([0, 0]);
+        this._wgsInitialShift = this.map.latLngToLayerPoint(this._wgsOrigin);
         this._zoom = this.map.getZoom();
         this._shift = L.point(0, 0);
         this._scale = 1;
 
         // Create projection object
-        _this = this;
         this.projection = {
             latLngToLayerPoint: function (latLng, zoom) {
-                zoom = _this._isDef(zoom) ? zoom : _layer._zoom;
-                var projectedPoint = _layer.map.project(L.latLng(latLng), zoom),
-                    projectedOrigin = _layer.map.project(_layer._origin, zoom);
-                return projectedPoint._subtract(projectedOrigin);
+                zoom = _layer._undef(zoom) ? _layer._zoom : zoom;
+                var projectedPoint = _layer.map.project(L.latLng(latLng), zoom)._round();
+                return projectedPoint._subtract(_layer._pixelOrigin);
             },
             layerPointToLatLng: function (point, zoom) {
-                zoom = _this._isDef(zoom) ? zoom : _layer._zoom;
-                var projectedOrigin = _layer.map.project(_layer._origin, zoom);
-                return _layer.map.unproject(point.add(projectedOrigin), zoom);
+                zoom = _layer._undef(zoom) ? _layer._zoom : zoom;
+                var projectedPoint = L.point(point).add(_layer._pixelOrigin);
+                return _layer.map.unproject(projectedPoint, zoom);
             },
             unitsPerMeter: 256 * Math.pow(2, _layer._zoom) / 40075017,
             map: _layer.map,
-            layer: _layer
+            layer: _layer,
+            scale: 1
         };
+
         // Compatibility with v.1
         this.projection.latLngToLayerFloatPoint = this.projection.latLngToLayerPoint;
         this.projection.getZoom = this.map.getZoom.bind(this.map);
         this.projection.getBounds = this.map.getBounds.bind(this.map);
+        this.selection = this._rootGroup;
 
-        // Two <g> elements, one for scale and one for translation
-        var uniqueId = "id" + Math.random().toString(26).slice(2, 7);
-        this._gTranslateXRef = "#" + uniqueId;
-        this._gTranslate = this._gOrigin
-            .append("g")
-            .classed("translate-anim", true)
-            .attr("transform", "translate(0,0)")
-            .attr("id", uniqueId);
-        uniqueId = "id" + Math.random().toString(26).slice(2, 7);
-        this._gScaleXRef = "#" + uniqueId;
-        this.selection = this._gScale = this._gTranslate
-            .append("g")
-            .classed("scale-anim", true)
-            .attr("transform", "scale(1,1)")
-            .attr("id", uniqueId);
-
-        // Zoom adjustments and animation
-        if (this._zoomAnimated) {
-            this.map.on("zoomanim", this._zoomCalc, this);
-            this.map.on("zoomstart", this._zoomStart, this);
-            this.map.on("zoomanim", this._zoomAnimate, this);
-            this.map.on("zoomend", this._zoomEnd, this);
-        }
-        else {
-            this.map.on("viewreset", this._zoomCalc, this);
-            this.map.on("viewreset", this._zoomChange, this);
-        }
+        if (L.version < "1.0") map.on("viewreset", this._zoomChange, this);
 
         // Initial draw
-        this.updSvg();
         this.draw();
     },
 
+    // Leaflet 1.0
+    getEvents: function() { return {zoomend: this._zoomChange}; },
+
     onRemove: function (map) {
-        this._svg.remove();
-        this.map.off(this._options.updateOn, this.draw, this);
-        this.map.off("moveend", this.updSvg, this);
-        if (this._zoomAnimated) {
-            this.map.off("zoomanim", this._zoomCalc, this);
-            this.map.off("zoomstart", this._zoomStart, this);
-            this.map.off("zoomanim", this._zoomAnimate, this);
-            this.map.off("zoomend", this._zoomEnd, this);
-        }
-        else {
-            this.map.off("viewreset", this._zoomCalc, this);
-            this.map.off("viewreset", this._zoomChange, this);
+        if (L.version < "1.0") {
+            map.off("viewreset", this._zoomChange, this);
+            this._rootGroup.remove();
+        } else {
+            this._svg.remove();
         }
     },
 
@@ -248,7 +149,7 @@ L.D3SvgOverlay = L.Class.extend({
 
 });
 
-L.D3SvgOverlay.version = "2.0";
+L.D3SvgOverlay.version = "2.1";
 
 // Factory method
 L.d3SvgOverlay = function (drawCallback, options) {
