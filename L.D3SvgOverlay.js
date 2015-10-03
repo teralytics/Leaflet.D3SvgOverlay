@@ -5,6 +5,16 @@
  *
  */
 
+(function (factory) {
+   if (typeof define === 'function' && define.amd) {
+       define(['leaflet', 'd3'], factory);
+   } else if (typeof module === 'object' && module.exports) {
+       module.exports = factory(require('leaflet', 'd3'));
+   } else {
+       factory(L, d3);
+   }
+}(function (L, d3) {
+
 // Check requirements
 if (typeof d3 == "undefined") {
     throw "D3 SVG Overlay for Leaflet requires D3 library loaded first";
@@ -155,3 +165,5 @@ L.D3SvgOverlay.version = "2.1";
 L.d3SvgOverlay = function (drawCallback, options) {
     return new L.D3SvgOverlay(drawCallback, options);
 };
+
+}));
