@@ -165,7 +165,7 @@ L.D3SvgOverlay = (L.version < "1.0" ? L.Class : L.Layer).extend({
 
 });
 
-L.D3SvgOverlay.version = "2.1";
+L.D3SvgOverlay.version = "2.2";
 
 // Factory method
 L.d3SvgOverlay = function (drawCallback, options) {

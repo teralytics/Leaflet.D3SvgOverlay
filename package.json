@@ -2,7 +2,7 @@
   "name": "leaflet-d3-svg-overlay",
   "description": "Leaflet Plugin: D3 SVG Overlay",
   "author": "Kirill Zhuravlev <kirill.zhuravlev@teralytics.ch>",
-  "version": "2.1.0",
+  "version": "2.2.0",
   "main": "L.D3SvgOverlay.js",
   "scripts": {
     "test": "echo \"Error: no test specified\" && exit 1"
