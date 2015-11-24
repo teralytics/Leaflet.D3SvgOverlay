@@ -17,7 +17,8 @@ for manipulating documents based on data.
 
 ## Demo
 
-[Simple example: Swiss cities](http://bl.ocks.org/xEviL/4921fff1d70f5601d159)
+* [Simple example: Swiss cities](http://bl.ocks.org/xEviL/4921fff1d70f5601d159)
+* [GeoJSON with D3](http://bl.ocks.org/xEviL/0c4f628645c6c21c8b3a)
 
 ## Basic usage
 
@@ -44,8 +45,8 @@ Create an overlay:
         updateSelection.enter()
             .append('circle')
             ...
-            .attr("cx",function(d){return projection.latLngToLayerPoint(d.latLng).x;})
-            .attr("cy",function(d){return projection.latLngToLayerPoint(d.latLng).y;});
+            .attr("cx", function(d) { return projection.latLngToLayerPoint(d.latLng).x })
+            .attr("cy", function(d) { return projection.latLngToLayerPoint(d.latLng).y });
         
     });
 
@@ -89,13 +90,14 @@ available methods/fields:
  * `scale`  - scale of current zoom compared to the zoom level of overlay coordinate system. Useful if you want to make your elements of a size independent of zoom. Just divide the size by the scale.
  * `map`    - reference to the `L.Map` object, useful to get map state (zoom, viewport bounds, etc), especially when having multiple maps in the page.
  * `layer`  - reference to the `L.D3SvgOverlay` object, useful for extending behavior of the overlay.
+ * `pathFromGeojson` - a [d3.geo.path](https://github.com/mbostock/d3/wiki/Geo-Paths#path) path generator object that can generate _SVG Path_ projected into the overlay's coordinate system from any [GeoJSON](http://geojson.org/)
 
 ## License
 
 This code is provided under the MIT License (MIT).
 
-## Brought to you by Teralytics AG
+## Brought to you by [Teralytics AG](http://teralytics.net/)
 
 Interested in data analysis, big data, mapping and visualizations? Have experience in running big infrastructure? We're hiring!
 
-Find how to apply at http://teralytics.net
+Find how to apply at [http://teralytics.net/](http://teralytics.net/)
