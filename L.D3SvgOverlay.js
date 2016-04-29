@@ -103,12 +103,7 @@ L.D3SvgOverlay = (L.version < "1.0" ? L.Class : L.Layer).extend({
         this.selection = this._rootGroup;
 
         // Init shift/scale invariance helper values
-        this._pixelOrigin = map.getPixelOrigin();
-        this._wgsOrigin = L.latLng([0, 0]);
-        this._wgsInitialShift = this.map.latLngToLayerPoint(this._wgsOrigin);
-        this._zoom = this.map.getZoom();
-        this._shift = L.point(0, 0);
-        this._scale = 1;
+        this.initHelperValues();
 
         // Create projection object
         this.projection = {
@@ -161,6 +156,16 @@ L.D3SvgOverlay = (L.version < "1.0" ? L.Class : L.Layer).extend({
     addTo: function (map) {
         map.addLayer(this);
         return this;
+    },
+
+    initHelperValues: function() {
+        // Init shift/scale invariance helper values
+        this._pixelOrigin = this.map.getPixelOrigin();
+        this._wgsOrigin = L.latLng([0, 0]);
+        this._wgsInitialShift = this.map.latLngToLayerPoint(this._wgsOrigin);
+        this._zoom = this.map.getZoom();
+        this._shift = L.point(0, 0);
+        this._scale = 1;
     }
 
 });
