@@ -34,7 +34,7 @@ if (L.version >= "1.0") {
 L.D3SvgOverlay = (L.version < "1.0" ? L.Class : L.Layer).extend({
     includes: (L.version < "1.0" ? L.Mixin.Events : []),
 
-    _undef: function(a){ return typeof a == "undefined" },
+    _undef: function(a){ return typeof a == "undefined"; },
 
     _options: function (options) {
         if (this._undef(options)) {
@@ -46,19 +46,9 @@ L.D3SvgOverlay = (L.version < "1.0" ? L.Class : L.Layer).extend({
         return this.options = options;
     },
 
-    _disableLeafletRounding: function(){
-        this._leaflet_round = L.Point.prototype._round;
-        L.Point.prototype._round = function(){ return this; };
-    },
-
-    _enableLeafletRounding: function(){
-        L.Point.prototype._round = this._leaflet_round;
-    },
 
     draw: function () {
-        this._disableLeafletRounding();
         this._drawCallback(this.selection, this.projection, this.map.getZoom());
-        this._enableLeafletRounding();
     },
 
     initialize: function (drawCallback, options) { // (Function(selection, projection)), (Object)options
@@ -68,7 +58,6 @@ L.D3SvgOverlay = (L.version < "1.0" ? L.Class : L.Layer).extend({
 
     // Handler for "viewreset"-like events, updates scale and shift after the animation
     _zoomChange: function (evt) {
-        this._disableLeafletRounding();
         var newZoom = this._undef(evt.zoom) ? this.map._zoom : evt.zoom; // "viewreset" event in Leaflet has not zoom/center parameters like zoomanim
         this._zoomDiff = newZoom - this._zoom;
         this._scale = Math.pow(2, this._zoomDiff);
@@ -80,8 +69,9 @@ L.D3SvgOverlay = (L.version < "1.0" ? L.Class : L.Layer).extend({
         var scale = ["scale(", this._scale, ",", this._scale,") "];
         this._rootGroup.attr("transform", shift.concat(scale).join(""));
 
-        if (this.options.zoomDraw) { this.draw() }
-        this._enableLeafletRounding();
+        if (this.options.zoomDraw) { 
+           this.draw(); 
+        }
     },
 
     onAdd: function (map) {
@@ -114,7 +104,7 @@ L.D3SvgOverlay = (L.version < "1.0" ? L.Class : L.Layer).extend({
         this.projection = {
             latLngToLayerPoint: function (latLng, zoom) {
                 zoom = _layer._undef(zoom) ? _layer._zoom : zoom;
-                var projectedPoint = _layer.map.project(L.latLng(latLng), zoom)._round();
+                var projectedPoint = _layer.map.project(L.latLng(latLng), zoom);
                 return projectedPoint._subtract(_layer._pixelOrigin);
             },
             layerPointToLatLng: function (point, zoom) {
@@ -131,16 +121,24 @@ L.D3SvgOverlay = (L.version < "1.0" ? L.Class : L.Layer).extend({
             var point = _layer.projection.latLngToLayerPoint(new L.LatLng(y, x));
             this.stream.point(point.x, point.y);
         };
-        this.projection.pathFromGeojson =
-            d3.geo.path().projection(d3.geo.transform({point: this.projection._projectPoint}));
+        if(d3.geo){
+           //d3 v3
+            this.projection.pathFromGeojson = d3.geo.path().projection(d3.geo.transform({point: this.projection._projectPoint}));
+        }else{
+           //d3 v4
+           this.projection.pathFromGeojson = d3.geoPath().projection(d3.geoTransform({point: this.projection._projectPoint}));
 
+        }
+        
         // Compatibility with v.1
         this.projection.latLngToLayerFloatPoint = this.projection.latLngToLayerPoint;
         this.projection.getZoom = this.map.getZoom.bind(this.map);
         this.projection.getBounds = this.map.getBounds.bind(this.map);
         this.selection = this._rootGroup;
 
-        if (L.version < "1.0") map.on("viewreset", this._zoomChange, this);
+        if (L.version < "1.0") {
+            map.on("viewreset", this._zoomChange, this);
+        }
 
         // Initial draw
         this.draw();
