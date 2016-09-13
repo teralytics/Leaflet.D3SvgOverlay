@@ -46,20 +46,9 @@ L.D3SvgOverlay = (L.version < "1.0" ? L.Class : L.Layer).extend({
         return this.options = options;
     },
 
-    _disableLeafletRounding: function(){
-        this._leaflet_round = L.Point.prototype._round;
-        L.Point.prototype._round = function(){ return this; };
-    },
-
-    _enableLeafletRounding: function(){
-        this._leaflet_round = L.Point.prototype._round;
-        L.Point.prototype._round = function(){ return this; };
-    },
 
     draw: function () {
-        this._disableLeafletRounding();
         this._drawCallback(this.selection, this.projection, this.map.getZoom());
-        this._enableLeafletRounding();
     },
 
     initialize: function (drawCallback, options) { // (Function(selection, projection)), (Object)options
@@ -69,7 +58,6 @@ L.D3SvgOverlay = (L.version < "1.0" ? L.Class : L.Layer).extend({
 
     // Handler for "viewreset"-like events, updates scale and shift after the animation
     _zoomChange: function (evt) {
-        this._disableLeafletRounding();
         var newZoom = this._undef(evt.zoom) ? this.map._zoom : evt.zoom; // "viewreset" event in Leaflet has not zoom/center parameters like zoomanim
         this._zoomDiff = newZoom - this._zoom;
         this._scale = Math.pow(2, this._zoomDiff);
@@ -81,8 +69,9 @@ L.D3SvgOverlay = (L.version < "1.0" ? L.Class : L.Layer).extend({
         var scale = ["scale(", this._scale, ",", this._scale,") "];
         this._rootGroup.attr("transform", shift.concat(scale).join(""));
 
-        if (this.options.zoomDraw) { this.draw() }
-        this._enableLeafletRounding();
+        if (this.options.zoomDraw) { 
+           this.draw(); 
+        }
     },
 
     onAdd: function (map) {
@@ -115,7 +104,7 @@ L.D3SvgOverlay = (L.version < "1.0" ? L.Class : L.Layer).extend({
         this.projection = {
             latLngToLayerPoint: function (latLng, zoom) {
                 zoom = _layer._undef(zoom) ? _layer._zoom : zoom;
-                var projectedPoint = _layer.map.project(L.latLng(latLng), zoom)._round();
+                var projectedPoint = _layer.map.project(L.latLng(latLng), zoom);
                 return projectedPoint._subtract(_layer._pixelOrigin);
             },
             layerPointToLatLng: function (point, zoom) {
