@@ -34,7 +34,7 @@ if (L.version >= "1.0") {
 L.D3SvgOverlay = (L.version < "1.0" ? L.Class : L.Layer).extend({
     includes: (L.version < "1.0" ? L.Mixin.Events : []),
 
-    _undef: function(a){ return typeof a == "undefined" },
+    _undef: function(a){ return typeof a == "undefined"; },
 
     _options: function (options) {
         if (this._undef(options)) {
@@ -52,7 +52,8 @@ L.D3SvgOverlay = (L.version < "1.0" ? L.Class : L.Layer).extend({
     },
 
     _enableLeafletRounding: function(){
-        L.Point.prototype._round = this._leaflet_round;
+        this._leaflet_round = L.Point.prototype._round;
+        L.Point.prototype._round = function(){ return this; };
     },
 
     draw: function () {
@@ -132,7 +133,7 @@ L.D3SvgOverlay = (L.version < "1.0" ? L.Class : L.Layer).extend({
             this.stream.point(point.x, point.y);
         };
         this.projection.pathFromGeojson =
-            d3.geo.path().projection(d3.geo.transform({point: this.projection._projectPoint}));
+            d3.geoPath().projection(d3.geoTransform({point: this.projection._projectPoint}));
 
         // Compatibility with v.1
         this.projection.latLngToLayerFloatPoint = this.projection.latLngToLayerPoint;
@@ -140,7 +141,9 @@ L.D3SvgOverlay = (L.version < "1.0" ? L.Class : L.Layer).extend({
         this.projection.getBounds = this.map.getBounds.bind(this.map);
         this.selection = this._rootGroup;
 
-        if (L.version < "1.0") map.on("viewreset", this._zoomChange, this);
+        if (L.version < "1.0") {
+            map.on("viewreset", this._zoomChange, this);
+        }
 
         // Initial draw
         this.draw();
