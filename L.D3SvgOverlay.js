@@ -147,7 +147,7 @@ L.D3SvgOverlay = (L.version < "1.0" ? L.Class : L.Layer).extend({
     },
 
     // Leaflet 1.0
-    getEvents: function() { return {zoomend: this._zoomChange}; },
+    getEvents: function() { return {zoomend: this._zoomChange, viewreset: this._zoomChange}; },
 
     onRemove: function (map) {
         if (L.version < "1.0") {
